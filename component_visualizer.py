@@ -1,7 +1,8 @@
 import argparse
 import os
-from typing import Iterable, Tuple
+from typing import Iterable
 
+# I've kept all your imports, they are correct.
 from OCC.Core.STEPControl import STEPControl_Reader
 from OCC.Core.IFSelect import IFSelect_RetDone
 from OCC.Core.TopExp import TopExp_Explorer
@@ -26,8 +27,9 @@ def iter_solids(shape):
         yield exp.Current()
         exp.Next()
 
-
-def save_component_images(step_path: str, out_dir: str) -> Iterable[str]:
+# CHANGE 1: The function now accepts the 'display' object as an argument.
+# It no longer creates or closes the display itself.
+def save_component_images(step_path: str, out_dir: str, display) -> Iterable[str]:
     """Save each solid from the STEP file as a PNG screenshot.
 
     Returns an iterable of paths to the saved images."""
@@ -38,9 +40,9 @@ def save_component_images(step_path: str, out_dir: str) -> Iterable[str]:
     solids = list(iter_solids(shape))
 
     if not solids:
-        raise RuntimeError("No solids found in the STEP file")
+        print(f"Warning: No solids found in the STEP file {step_path}. Skipping.")
+        return []
 
-    display, start_display, add_menu, add_function_to_menu = init_display()
     saved = []
     for i, solid in enumerate(solids, start=1):
         display.EraseAll()
@@ -50,38 +52,59 @@ def save_component_images(step_path: str, out_dir: str) -> Iterable[str]:
         display.View.Dump(img_path)
         saved.append(img_path)
         print(f"Saved {img_path}")
-
-    display.Close()
+        
+    # CHANGE 2: Removed the 'display.Close()' line which was causing the crash.
+    # The display is now managed by the calling function.
     return saved
 
 
 def iter_step_files(path: str, recursive: bool = False) -> Iterable[str]:
     """Yield all .stp or .step files from a file or directory path."""
     if os.path.isfile(path):
-        return [path]
+        # If it's a file, just yield that one file if it's a step file
+        if os.path.splitext(path)[1].lower() in {".stp", ".step"}:
+            yield path
+        return
 
-    step_exts = {".stp", ".step", ".STEP", ".STP"}
-    files = []
+    step_exts = {".stp", ".step"}
+    
     if recursive:
         for root, _, filenames in os.walk(path):
             for fname in filenames:
-                if os.path.splitext(fname)[1] in step_exts:
-                    files.append(os.path.join(root, fname))
+                if os.path.splitext(fname)[1].lower() in step_exts:
+                    yield os.path.join(root, fname)
     else:
         for fname in os.listdir(path):
-            if os.path.splitext(fname)[1] in step_exts:
-                files.append(os.path.join(path, fname))
-    return files
+            full_path = os.path.join(path, fname)
+            if os.path.isfile(full_path) and os.path.splitext(fname)[1].lower() in step_exts:
+                yield full_path
 
 
-def process_path(step_path: str, output_dir: str, recursive: bool = False):
+def process_path(input_path: str, output_dir: str, recursive: bool = False):
     """Process a STEP file or all STEP files in a directory."""
-    files = iter_step_files(step_path, recursive=recursive)
-    for fpath in files:
+    
+    # CHANGE 3: Initialize the display ONCE, before processing any files.
+    # We only need the 'display' object from the tuple it returns.
+    display, start_display, add_menu, add_function_to_menu = init_display()
+    
+    # Get all the file paths first
+    files_to_process = list(iter_step_files(input_path, recursive=recursive))
+
+    if not files_to_process:
+        print(f"No STEP/STP files found in '{input_path}'.")
+        return
+
+    for fpath in files_to_process:
+        # Create a unique sub-directory for each STEP file's components
         base = os.path.splitext(os.path.basename(fpath))[0]
-        out = os.path.join(output_dir, base)
-        print(f"Processing {fpath}")
-        save_component_images(fpath, out)
+        out_subdir = os.path.join(output_dir, base)
+        
+        print(f"\nProcessing {fpath}...")
+        try:
+            # CHANGE 4: Pass the single, shared 'display' object to the function.
+            save_component_images(fpath, out_subdir, display)
+        except Exception as e:
+            print(f"!!!!!!!! FAILED to process {fpath}: {e} !!!!!!!!")
 
 
 def main():
@@ -104,6 +127,7 @@ def main():
     args = parser.parse_args()
 
     process_path(args.path, args.output_dir, recursive=args.recursive)
+    print("\nAll done.")
 
 
 if __name__ == "__main__":
