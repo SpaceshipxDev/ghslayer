@@ -11,10 +11,27 @@ from OCC.Core.TCollection import TCollection_ExtendedString
 from OCC.Core.XCAFDoc import XCAFDoc_DocumentTool
 from OCC.Core.TDataStd import TDataStd_Name
 from OCC.Core.TDF import TDF_LabelSequence
+from OCC.Core.TopAbs import TopAbs_SOLID
+
+
+def _collect_components(shape_tool, label: object, seq: list):
+    """Recursively collect solid shapes with their names."""
+    sub = TDF_LabelSequence()
+    shape_tool.GetSubShapes(label, sub)
+    for i in range(sub.Length()):
+        _collect_components(shape_tool, sub.Value(i + 1), seq)
+
+    shape = shape_tool.GetShape(label)
+    if not shape.IsNull() and shape.ShapeType() == TopAbs_SOLID:
+        name_attr = TDataStd_Name()
+        name = None
+        if label.FindAttribute(TDataStd_Name.GetID(), name_attr):
+            name = name_attr.Get().ToExtString()
+        seq.append((shape, name))
 
 
 def load_components(path: str) -> Iterable[Tuple[object, str]]:
-    """Load a STEP file and return each top-level shape with its name."""
+    """Load a STEP file and return each solid along with its name."""
     app = XCAFApp_Application.GetApplication()
     doc = TDocStd_Document(TCollection_ExtendedString("pythonocc-doc"))
     app.NewDocument("MDTV-XCAF", doc)
@@ -34,15 +51,22 @@ def load_components(path: str) -> Iterable[Tuple[object, str]]:
 
     components = []
     for i in range(labels.Length()):
-        lbl = labels.Value(i + 1)
-        shape = shape_tool.GetShape(lbl)
-        name_attr = TDataStd_Name()
-        name = f"component_{i+1}"
-        if lbl.FindAttribute(TDataStd_Name.GetID(), name_attr):
-            name = name_attr.Get().ToExtString()
-        components.append((shape, name))
+        _collect_components(shape_tool, labels.Value(i + 1), components)
 
-    return components
+    # ensure unique names by appending an index if needed
+    seen = {}
+    unique = []
+    for shape, name in components:
+        key = name or "component"
+        idx = seen.get(key, 0)
+        seen[key] = idx + 1
+        if name is None:
+            name = f"component_{idx+1}"
+        elif idx:
+            name = f"{name}_{idx+1}"
+        unique.append((shape, name))
+
+    return unique
 
 
 def save_component_images(step_path: str, out_dir: str) -> Iterable[str]:

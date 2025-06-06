@@ -18,7 +18,7 @@ On Apple silicon Macs you may need to install `pythonocc-core` via [conda](https
 
 ## Usage
 
-Run the script with the path to a STEP file or a directory containing multiple STEP files. Each part detected in the file is exported as a PNG using the part name. Images are saved inside a folder named after the STEP file:
+Run the script with the path to a STEP file or a directory containing multiple STEP files. The script extracts the original component names from the STEP data and saves a PNG of each solid using that name. Images are stored inside a folder named after the STEP file:
 
 ```bash
 python component_visualizer.py path/or/folder output_folder
