@@ -18,13 +18,13 @@ On Apple silicon Macs you may need to install `pythonocc-core` via [conda](https
 
 ## Usage
 
-Run the script with the path to a STEP file and the desired output directory:
+Run the script with the path to a STEP file or a directory containing multiple STEP files. Screenshots for each file will be placed in a subfolder named after the STEP file inside the given output directory:
 
 ```bash
-python component_visualizer.py path/to/model.stp output_folder
+python component_visualizer.py path/or/folder output_folder
 ```
 
-Each solid in the STEP file will be rendered to a separate PNG inside `output_folder`.
+Use `--recursive` to search subdirectories for STEP files. Each solid from every file will be rendered to PNGs inside `output_folder/<step_name>/`.
 
 ## Notes
 
