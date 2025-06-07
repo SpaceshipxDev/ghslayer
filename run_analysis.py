@@ -20,7 +20,7 @@ except Exception:
     exit()
 
 # 2. The Excel file you want to analyze
-EXCEL_FILE_PATH = "example.xlsx"
+EXCEL_FILE_PATH = "20250528-探野T4-3D打印手板加工清单.xlsx"
 
 # 3. Your prompt/question for the AI
 YOUR_PROMPT = """
