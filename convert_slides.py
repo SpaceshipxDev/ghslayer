@@ -5,7 +5,7 @@ import shutil
 # --- Configuration ---
 # The name of your PowerPoint file.
 # Make sure this file is in the same folder as the script.
-PPTX_FILE = "/Users/hashashin/Downloads/01/手板件打样图纸20250514/手板件打样图纸/3D说明.pptx"
+PPTX_FILE = "/Users/hashashin/Downloads/samplepptx.pptx"
 
 # The name of the folder where the slide images will be saved.
 OUTPUT_FOLDER = "slide_images"
