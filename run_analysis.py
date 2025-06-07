@@ -27,7 +27,7 @@ YOUR_PROMPT = """
 Analyze the provided Excel data.
 
 Please provide a summary of the 'Products' sheet.
-For each product, describe the item based on the data table and the associated image.
+For each product, describe the item based on the data table and the associated image. also tell me what each product looks like. 
 """
 
 # 4. The model to use
