@@ -2,7 +2,7 @@
 import pandas as pd
 import openpyxl
 from openpyxl.utils import get_column_letter
-from google.generativeai import types
+from google.genai import types
 import base64
 
 def get_image_format(image_data):
